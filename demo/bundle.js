@@ -3417,10 +3417,10 @@ By Devon Govett
               if (_this.ellipsis === true) {
                 _this.ellipsis = '…';
               }
-              buffer = buffer.trimRight();
+              buffer = buffer.replace(/\s+$/, '');
               textWidth = _this.wordWidth(buffer + _this.ellipsis);
               while (textWidth > _this.lineWidth) {
-                buffer = buffer.slice(0, -1).trimRight();
+                buffer = buffer.slice(0, -1).replace(/\s+$/, '');
                 textWidth = _this.wordWidth(buffer + _this.ellipsis);
               }
               buffer = buffer + _this.ellipsis;
@@ -4341,7 +4341,7 @@ By Devon Govett
       if (options.width) {
         switch (align) {
           case 'right':
-            textWidth = this.widthOfString(text.trimRight(), options);
+            textWidth = this.widthOfString(text.replace(/\s+$/, ''), options);
             x += options.lineWidth - textWidth;
             break;
           case 'center':

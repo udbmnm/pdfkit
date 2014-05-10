@@ -2986,13 +2986,17 @@ By Devon Govett
     function PDFImage() {}
 
     PDFImage.open = function(src, label) {
-      var data;
+      var data, match;
       if (Buffer.isBuffer(src)) {
         data = src;
       } else {
-        data = fs.readFileSync(src);
-        if (!data) {
-          return;
+        if (match = /^data:.+;base64,(.*)$/.exec(src)) {
+          data = new Buffer(match[1], 'base64');
+        } else {
+          data = fs.readFileSync(src);
+          if (!data) {
+            return;
+          }
         }
       }
       if (data[0] === 0xff && data[1] === 0xd8) {
@@ -4124,12 +4128,7 @@ By Devon Govett
     initText: function() {
       this.x = 0;
       this.y = 0;
-      this._lineGap = 0;
-      return this._textState = {
-        mode: 0,
-        wordSpacing: 0,
-        characterSpacing: 0
-      };
+      return this._lineGap = 0;
     },
     lineGap: function(_lineGap) {
       this._lineGap = _lineGap;
@@ -4329,12 +4328,11 @@ By Devon Govett
       }
     },
     _fragment: function(text, x, y, options) {
-      var align, characterSpacing, commands, d, encoded, i, lineWidth, lineY, mode, renderedWidth, spaceWidth, state, textWidth, word, wordSpacing, words, _base, _i, _len, _name;
+      var align, characterSpacing, commands, d, encoded, i, lineWidth, lineY, mode, renderedWidth, spaceWidth, textWidth, word, wordSpacing, words, _base, _i, _len, _name;
       text = '' + text;
       if (text.length === 0) {
         return;
       }
-      state = this._textState;
       align = options.align || 'left';
       wordSpacing = options.wordSpacing || 0;
       characterSpacing = options.characterSpacing || 0;
@@ -4363,7 +4361,7 @@ By Devon Govett
         if (!options.stroke) {
           this.strokeColor.apply(this, this._fillColor);
         }
-        lineWidth = this._fontSize >= 20 ? 2 : 1;
+        lineWidth = this._fontSize < 10 ? 0.5 : Math.floor(this._fontSize / 10);
         this.lineWidth(lineWidth);
         d = options.underline ? 1 : 2;
         lineY = y + this.currentLineHeight() / d;
@@ -4386,11 +4384,11 @@ By Devon Govett
       this.addContent("" + x + " " + y + " Td");
       this.addContent("/" + this._font.id + " " + this._fontSize + " Tf");
       mode = options.fill && options.stroke ? 2 : options.stroke ? 1 : 0;
-      if (mode !== state.mode) {
+      if (mode) {
         this.addContent("" + mode + " Tr");
       }
-      if (characterSpacing !== state.characterSpacing) {
-        this.addContent(characterSpacing + ' Tc');
+      if (characterSpacing) {
+        this.addContent("" + characterSpacing + " Tc");
       }
       if (wordSpacing) {
         words = text.trim().split(/\s+/);
@@ -4424,9 +4422,7 @@ By Devon Govett
         this.addContent("<" + encoded + "> Tj");
       }
       this.addContent("ET");
-      this.restore();
-      state.mode = mode;
-      return state.characterSpacing = characterSpacing;
+      return this.restore();
     }
   };
 
